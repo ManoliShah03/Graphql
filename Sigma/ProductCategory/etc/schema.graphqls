@@ -1,0 +1,17 @@
+type Query {
+    product(sku: String! @doc(description: "The SKU of the product")): ProductDetails @resolver(class: "Sigma\\ProductCategory\\Model\\Resolver\\ProductCategoryResolver") @doc(description: "Retrieve the value of the custom attribute for a product")
+}
+
+type ProductDetails {
+    sku: String
+    label: String
+    id: Int
+    price: Float
+    color: String
+    categories: [Category]
+}
+
+type Category {
+    id: Int
+    name: String
+}
