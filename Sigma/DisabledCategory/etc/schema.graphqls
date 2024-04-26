@@ -1,0 +1,10 @@
+type Query {
+  disabledCategories: [DisabledCategory] @resolver(class: "Sigma\\DisabledCategory\\Model\\Resolver\\DisabledCategoriesResolver") @doc(description: "Get disabled categories")
+}
+
+type DisabledCategory {
+  id: Int
+  name: String
+  description: String
+  imageUrl: String
+}
