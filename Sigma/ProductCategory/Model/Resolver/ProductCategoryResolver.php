@@ -8,12 +8,33 @@ use Magento\Catalog\Api\ProductRepositoryInterface;
 use Magento\Catalog\Api\ProductAttributeRepositoryInterface;
 use Magento\Catalog\Api\CategoryRepositoryInterface;
 
+/**
+ * Resolver for retrieving product details by SKU
+ */
 class ProductCategoryResolver implements ResolverInterface
 {
+    /**
+     * @var ProductRepositoryInterface
+     */
     protected $productRepository;
+
+    /**
+     * @var ProductAttributeRepositoryInterface
+     */
     protected $attributeRepository;
+
+    /**
+     * @var CategoryRepositoryInterface
+     */
     protected $categoryRepository;
 
+    /**
+     * ProductCategoryResolver constructor.
+     *
+     * @param ProductRepositoryInterface $productRepository
+     * @param ProductAttributeRepositoryInterface $attributeRepository
+     * @param CategoryRepositoryInterface $categoryRepository
+     */
     public function __construct(
         ProductRepositoryInterface $productRepository,
         ProductAttributeRepositoryInterface $attributeRepository,
@@ -24,8 +45,17 @@ class ProductCategoryResolver implements ResolverInterface
         $this->categoryRepository = $categoryRepository;
     }
 
+    /**
+     * Resolve product details by SKU
+     *
+     * @param Field $field
+     * @param mixed|null $context
+     * @param ResolveInfo $info
+     * @param array|null $value
+     * @param array|null $args
+     * @return array
+     */
     public function resolve(Field $field, $context, ResolveInfo $info, array $value = null, array $args = null)
-
     {
         $sku = $args['sku'];
         $attributeCode = 'materials';
@@ -44,18 +74,16 @@ class ProductCategoryResolver implements ResolverInterface
             $defaultAttribute = $this->attributeRepository->get($defaultAttribute);
             $defaultAttributeLabel = $defaultAttribute->getSource()->getOptionText($defaultAttributeValue);
 
-            $writer = new \Zend_Log_Writer_Stream(BP . '/var/log/manoli.log');
-            $logger = new \Zend_Log();
-            $logger->addWriter($writer);
-
             $categoryIds = $product->getCategoryIds();
             $categories = [];
             foreach ($categoryIds as $categoryId) {
                 $category = $this->categoryRepository->get($categoryId);
-                $categories[] = [
-                    'id' => $category->getId(),
-                    'name' => $category->getName(),
-                ];
+                if ($category->getIsActive()) {
+                    $categories[] = [
+                        'id' => $category->getId(),
+                        'name' => $category->getName(),
+                    ];
+                }
             }
 
             return [
@@ -65,9 +93,14 @@ class ProductCategoryResolver implements ResolverInterface
                 'price' => $productprice,
                 'color' => $defaultAttributeLabel,
                 'categories' => $categories,
+                'message' => "Enabled categories are:"
             ];
-        } catch (\Exception $e) {
-            throw new \Exception(__('Failed to fetch custom attribute value: %1', $e->getMessage()));
+        } catch (\Magento\Framework\Exception\NoSuchEntityException $e) {
+            // Handle the case when product with given SKU is not found
+            return [
+                'sku' => $sku,
+                'message' => "The product with SKU {$sku} was not found. Verify the SKU and try again."
+            ];
         }
     }
 }

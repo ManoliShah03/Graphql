@@ -4,15 +4,9 @@ namespace Sigma\Graphql\Model\Resolver;
 
 use Magento\Catalog\Api\ProductRepositoryInterface;
 use Magento\CatalogInventory\Api\StockRegistryInterface;
-use Magento\Framework\Exception\NoSuchEntityException;
-use Magento\Framework\Exception\CouldNotSaveException;
 use Magento\Framework\GraphQl\Config\Element\Field;
-use Magento\Framework\GraphQl\Query\Resolver\ContextInterface;
-use Magento\Framework\GraphQl\Query\Resolver\Value;
 use Magento\Framework\GraphQl\Query\ResolverInterface;
 use Magento\Framework\GraphQl\Schema\Type\ResolveInfo;
-use Magento\Framework\Exception\InputException;
-use Magento\Framework\Exception\LocalizedException;
 
 class UpdateProductStock implements ResolverInterface
 {
@@ -26,6 +20,12 @@ class UpdateProductStock implements ResolverInterface
      */
     private $stockRegistry;
 
+    /**
+     * UpdateProductStock constructor.
+     *
+     * @param ProductRepositoryInterface $productRepository
+     * @param StockRegistryInterface $stockRegistry
+     */
     public function __construct(
         ProductRepositoryInterface $productRepository,
         StockRegistryInterface $stockRegistry
@@ -33,28 +33,49 @@ class UpdateProductStock implements ResolverInterface
         $this->productRepository = $productRepository;
         $this->stockRegistry = $stockRegistry;
     }
+
+    /**
+     * Resolver for updating product stock.
+     *
+     * @param Field $field
+     * @param mixed $context
+     * @param ResolveInfo $info
+     * @param array|null $value
+     * @param array|null $args
+     * @return array
+     */
     public function resolve(Field $field, $context, ResolveInfo $info, array $value = null, array $args = null)
     {
         try {
-            $writer = new \Zend_Log_Writer_Stream(BP . '/var/log/test.log');
-            $logger = new \Zend_Log();
-            $logger->addWriter($writer);
             $sku = $args['sku'];
-            $logger->info($sku);
             $quantity = $args['quantity'];
-            $logger->info($quantity);
+
+            if ($quantity < 0) {
+                return [
+                    'sku' => $sku,
+                    'message' => "Negative values are not allowed for stock"
+                ];
+            }
+
             $product = $this->productRepository->get($sku);
             $stockItem = $this->stockRegistry->getStockItem($product->getId());
+
             $stockItem->setQty($quantity);
             $this->stockRegistry->updateStockItemBySku($sku, $stockItem);
 
-//            $logger->info(print_r($stockItem));
+            // Check if the stock update was successful
+            $updatedStockItem = $this->stockRegistry->getStockItem($product->getId());
+
             return [
                 'sku' => $sku,
                 'message' => "Updated stock successfully"
             ];
         } catch (\Exception $e) {
-            throw new \Exception(__('Failed to update stock quantity: %1', $e->getMessage()));
+            return [
+                'sku' => $sku,
+                'message' => "Failed to update stock quantity: The product that was requested doesn't exist.
+                 Verify the product and try again"
+            ];
         }
     }
 }

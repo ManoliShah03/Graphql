@@ -9,6 +9,7 @@ type ProductDetails {
     price: Float
     color: String
     categories: [Category]
+    message: String
 }
 
 type Category {
