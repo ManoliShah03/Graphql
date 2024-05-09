@@ -1,12 +1,19 @@
 type Query {
-    customAttribute(sku: String! @doc(description: "The SKU of the product")): ProductDetails @resolver(class: "Sigma\\CustomAttribute\\Model\\Resolver\\CustomAttributeResolver") @doc(description: "Retrieve the value of the custom attribute for a product")
+    customAttribute(
+        sku: String! @doc(description: "The SKU of the product")
+        attributeCode: [String!]! @doc(description: "The codes of the custom attributes to fetch")
+    ): ProductDetails @resolver(class: "Sigma\\CustomAttribute\\Model\\Resolver\\CustomAttributeResolver") @doc(description: "Retrieve the value of the custom attributes for a product")
 }
 
 type ProductDetails {
-        sku:String
-        label: String
-        id: Int
-        price: Float
-        color: String
-    }
+    sku: String
+    label: String
+    id: Int
+    price: Float
+    productAttributes: [CustomAttributeData] @doc(description: "The labels and values of the requested custom attributes")
+}
+
+type CustomAttributeData {
+    label: String
+    value: String
 }
