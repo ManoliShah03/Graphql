@@ -1,14 +1,13 @@
-type CmsBlockItem {
-  identifier: String!
-  is_active: Boolean!
-  title: String!
-  content: String!
-}
-
-type CmsBlocks {
-  items: [CmsBlockItem!]!
+type CmsBlock {
+    is_active: Boolean
 }
 
 type Query {
-  cmsBlocks(identifiers: [String!]!): CmsBlocks @resolver(class: "\\Sigma\\CmsBlock\\Model\\Resolver\\CustomCmsBlocks") @doc(description: "Retrieve CMS blocks by identifiers")
+    cmsBlocks(
+        identifiers: [String!]!
+    ): CmsBlocksList @resolver(class: "\\Sigma\\CmsBlock\\Model\\Resolver\\CustomCmsBlocks")
+}
+
+type CmsBlocksList {
+    items: [CmsBlock!]!
 }

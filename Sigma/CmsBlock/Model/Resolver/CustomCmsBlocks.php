@@ -2,111 +2,69 @@
 
 namespace Sigma\CmsBlock\Model\Resolver;
 
-use Magento\CmsGraphQl\Model\Resolver\DataProvider\Block as DefaultBlockDataProvider;
-use Magento\Framework\App\ResourceConnection;
+use Magento\CmsGraphQl\Model\Resolver\Blocks;
 use Magento\Framework\GraphQl\Config\Element\Field;
-use Magento\Framework\GraphQl\Exception\GraphQlInputException;
-use Magento\Framework\GraphQl\Query\ResolverInterface;
 use Magento\Framework\GraphQl\Schema\Type\ResolveInfo;
+use Magento\Cms\Model\BlockFactory;
+use Magento\Framework\GraphQl\Exception\GraphQlInputException;
 
 /**
- * Class CustomCmsBlocks
- * Resolver for retrieving custom CMS blocks
+ * Custom resolver for fetching CMS blocks with additional details.
  */
-class CustomCmsBlocks implements ResolverInterface
+class CustomCmsBlocks extends Blocks
 {
     /**
-     * @var DefaultBlockDataProvider
+     * @var BlockFactory
      */
-    private $dataProvider;
-
-    /**
-     * @var ResourceConnection
-     */
-    private $resourceConnection;
+    protected $blockFactory;
 
     /**
      * CustomCmsBlocks constructor.
      *
-     * @param DefaultBlockDataProvider $dataProvider The default block data provider
-     * @param ResourceConnection $resourceConnection The resource connection
+     * @param BlockFactory $blockFactory
      */
     public function __construct(
-        DefaultBlockDataProvider $dataProvider,
-        ResourceConnection $resourceConnection
+        BlockFactory $blockFactory
     ) {
-        $this->dataProvider = $dataProvider;
-        $this->resourceConnection = $resourceConnection;
+        $this->blockFactory = $blockFactory;
     }
 
     /**
-     * Resolve custom CMS blocks.
+     * Resolve the CMS blocks with additional details.
      *
-     * @param Field $field The field element
-     * @param mixed $context The context
-     * @param ResolveInfo $info The resolve info
-     * @param array|null $value The value
-     * @param array|null $args The arguments
-     * @return array The resolved custom CMS blocks
+     * @param Field|null $field
+     * @param mixed|null $context
+     * @param ResolveInfo|null $info
+     * @param array|null $value
+     * @param array|null $args
+     * @return array
      * @throws GraphQlInputException
      */
     public function resolve(Field $field, $context, ResolveInfo $info, array $value = null, array $args = null)
     {
-        $storeId = (int)$context->getExtensionAttributes()->getStore()->getId();
-        $blockIdentifiers = $this->getBlockIdentifiers($args);
-        $blocksData = $this->getBlocksData($blockIdentifiers, $storeId);
+        try {
+            $identifiers = $args['identifiers'];
+            $result = ['items' => []];
 
-        return [
-            'items' => $blocksData,
-        ];
-    }
+            foreach ($identifiers as $identifier) {
+                $staticBlock = $this->blockFactory->create()->load($identifier);
 
-    /**
-     * Get block identifiers.
-     *
-     * @param array $args The arguments
-     * @return array The block identifiers
-     * @throws GraphQlInputException
-     */
-    private function getBlockIdentifiers(array $args): array
-    {
-        if (!isset($args['identifiers']) || !is_array($args['identifiers']) || count($args['identifiers']) === 0) {
-            throw new GraphQlInputException(__('"identifiers" of CMS blocks should be specified'));
-        }
+                if (!$staticBlock->getId()) {
+                    throw new GraphQlInputException(__('CMS block with identifier "%1" does not exist.', $identifier));
+                }
 
-        return $args['identifiers'];
-    }
-
-    /**
-     * Get blocks data.
-     *
-     * @param array $blockIdentifiers The block identifiers
-     * @param int $storeId The store ID
-     * @return array The block data
-     */
-    private function getBlocksData(array $blockIdentifiers, int $storeId): array
-    {
-        $connection = $this->resourceConnection->getConnection();
-        $cmsBlockTable = $connection->getTableName('cms_block');
-
-        $blocksData = [];
-        foreach ($blockIdentifiers as $blockIdentifier) {
-            $select = $connection->select()
-                ->from($cmsBlockTable, ['is_active', 'title', 'content'])
-                ->where('identifier = ?', $blockIdentifier);
-
-            $blockInfo = $connection->fetchRow($select);
-
-            if ($blockInfo) {
-                $blocksData[$blockIdentifier] = [
-                    'identifier' => $blockIdentifier,
-                    'is_active' => (bool)$blockInfo['is_active'],
-                    'title' => $blockInfo['title'] ?? 'Default Title',
-                    'content' => $blockInfo['content'] ?? 'Default Content',
+                $result['items'][] = [
+                    'title' => $staticBlock->getTitle(),
+                    'content' => $staticBlock->getContent(),
+                    'identifier' => $staticBlock->getIdentifier(),
+                    'is_active' => (bool) $staticBlock->getIsActive()
                 ];
             }
-        }
 
-        return $blocksData;
+            return $result;
+        } catch (\Exception $e) {
+            // Handle exceptions
+            throw new GraphQlInputException(__('An error occurred while processing the request: %1', $e->getMessage()));
+        }
     }
 }
