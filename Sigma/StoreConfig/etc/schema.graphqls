@@ -1,0 +1,11 @@
+type Query {
+  getMessageQueueConfig: MessageQueueConfig @resolver(class: "Sigma\\StoreConfig\\Model\\Resolver\\MessageQueueConfigResolver") @doc(description: "Update product stock quantity by SKU")
+    }
+
+
+type MessageQueueConfig {
+  successfulMessagesLifetime: Int!
+  retryInProgressAfter: Int!
+  failedMessagesLifetime: Int!
+  newMessagesLifetime: Int!
+}
