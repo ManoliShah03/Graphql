@@ -16,31 +16,48 @@ class MessageQueueConfigResolver implements ResolverInterface
 
     /**
      * MessageQueueConfigResolver constructor.
+     *
      * @param MessageQueueHelper $messageQueueHelper
      */
-    public function __construct(
-        MessageQueueHelper $messageQueueHelper
-    ) {
+    public function __construct(MessageQueueHelper $messageQueueHelper)
+    {
         $this->messageQueueHelper = $messageQueueHelper;
     }
 
     /**
      * Resolve message queue configuration
      *
-     * @param Field $field
-     * @param mixed $context
-     * @param ResolveInfo $info
-     * @param array|null $value
-     * @param array|null $args
+     * @param Field         $field
+     * @param mixed         $context
+     * @param ResolveInfo   $info
+     * @param array|null    $value
+     * @param array|null    $args
      * @return array
      */
-    public function resolve(Field $field, $context, ResolveInfo $info, array $value = null, array $args = null)
-    {
+    public function resolve(
+        Field $field,
+        $context,
+        ResolveInfo $info,
+        array $value = null,
+        array $args = null
+    ) {
         return [
-            'successfulMessagesLifetime' => (int) $this->messageQueueHelper->getSuccessfulMessagesLifetime(),
-            'retryInProgressAfter' => (int) $this->messageQueueHelper->getRetryInProgressAfter(),
-            'failedMessagesLifetime' => (int) $this->messageQueueHelper->getFailedMessagesLifetime(),
-            'newMessagesLifetime' => (int) $this->messageQueueHelper->getNewMessagesLifetime(),
+            'successfulMessagesLifetime' => $this->getValueOrBlank($this->messageQueueHelper->
+            getSuccessfulMessagesLifetime()),
+            'retryInProgressAfter' => $this->getValueOrBlank($this->messageQueueHelper->getRetryInProgressAfter()),
+            'failedMessagesLifetime' => $this->getValueOrBlank($this->messageQueueHelper->getFailedMessagesLifetime()),
+            'newMessagesLifetime' => $this->getValueOrBlank($this->messageQueueHelper->getNewMessagesLifetime())
         ];
+    }
+
+    /**
+     * Get value or return null if value is empty
+     *
+     * @param mixed $value
+     * @return mixed
+     */
+    protected function getValueOrBlank($value)
+    {
+        return !empty($value) ? (int)$value :' ';
     }
 }

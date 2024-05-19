@@ -1,11 +1,10 @@
 type Query {
-  getMessageQueueConfig: MessageQueueConfig @resolver(class: "Sigma\\StoreConfig\\Model\\Resolver\\MessageQueueConfigResolver") @doc(description: "Update product stock quantity by SKU")
-    }
-
+  getMessageQueueConfig: MessageQueueConfig @resolver(class: "Sigma\\StoreConfig\\Model\\Resolver\\MessageQueueConfigResolver") @doc(description: "Get message queue configuration")
+}
 
 type MessageQueueConfig {
-  successfulMessagesLifetime: Int!
-  retryInProgressAfter: Int!
-  failedMessagesLifetime: Int!
-  newMessagesLifetime: Int!
+  successfulMessagesLifetime: String
+  retryInProgressAfter: String
+  failedMessagesLifetime: String
+  newMessagesLifetime: String
 }
