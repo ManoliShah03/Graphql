@@ -1,0 +1,7 @@
+extend type ProductInterface @resolver(class: "\\Sigma\\WishlistOverride\\Model\\Resolver\\WishlistOverride"){
+  product_id: Int @doc(description: "The Id of the product.")
+  product_url: String @doc(description: "The URL of the product.")
+}
+
+
+
