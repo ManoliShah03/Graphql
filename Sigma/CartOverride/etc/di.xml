@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <preference for="Magento\QuoteGraphQl\Model\Resolver\AddSimpleProductsToCart" type="Sigma\CartOverride\Model\Resolver\AddSimpleProducts" />
+    <preference for="Magento\QuoteGraphQl\Model\Resolver\UpdateCartItems" type="Sigma\CartOverride\Model\Resolver\UpdateSimpleProducts" />
+</config>
