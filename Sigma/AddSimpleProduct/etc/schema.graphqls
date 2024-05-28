@@ -1,0 +1,44 @@
+type Mutation {
+  CreateSimpleProduct(
+    input: SimpleProductDetails!
+  ): SimpleProduct! @resolver(class: "\\Sigma\\AddSimpleProduct\\Model\\Resolver\\AddSimpleProduct")
+}
+
+type SimpleProduct {
+  product_id: Int
+  name: String @doc(description: "Product details.")
+  sku: String @doc(description: "Product details.")
+  qty: Int
+}
+
+input SimpleProductDetails @doc(description: "Defines a new product.") {
+  name: String @doc(description: "Name of the product.")
+  sku: String @doc(description: "SKU of the product.")
+  status: Boolean! @doc(description: "The status of the product.")
+  visibility: Int! @doc(description: "The visibility of the product.")
+  price: Float @doc(description: "Regular price of the product.")
+  stock_data: ProductStock! @doc(description: "Stock data")
+  tier_prices: [TierPrice] @doc(description: "Tier price of the product.")
+  special_price: SpecialPrice @doc(description: "Special price of the product.")
+}
+
+input SpecialPrice @doc(description: "Special price for the product.") {
+  special_price: Float
+  special_from_date: String
+  special_to_date: String
+}
+
+input TierPrice @doc(description: "Tier price for the product.") {
+  customer_group_id: Int @doc(description: "Customer group ID for the tier price. 32000-allgroup 0-Notloggedin 1-General 2-Wholesale 3-Retailer ")
+  qty: Float @doc(description: "Minimum quantity for the tier price.")
+  value: Float @doc(description: "Price value for the tier price.")
+}
+
+input ProductStock @doc(description: "Stock data for the product.") {
+    use_config_manage_stock: Int
+    manage_stock: Int
+    min_sale_qty: Float
+    max_sale_qty: Float
+    is_in_stock: Boolean!
+    qty: Float!
+}
