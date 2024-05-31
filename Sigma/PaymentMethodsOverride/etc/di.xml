@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <preference for="Magento\QuoteGraphQl\Model\Resolver\AvailablePaymentMethods" type="Sigma\PaymentMethodsOverride\Model\Resolver\PaymentMethods" />
+    <preference for="Magento\Payment\Model\PaymentMethodList" type="Sigma\PaymentMethodsOverride\Model\PaymentMethodList" />
+    <type name="Magento\Payment\Model\PaymentMethodList">
+        <arguments>
+            <argument name="customPaymentMethodRepository" xsi:type="object">Sigma\PaymentMethodsOverride\Model\CustomPaymentMethodRepository</argument>
+        </arguments>
+    </type>
+
+</config>
