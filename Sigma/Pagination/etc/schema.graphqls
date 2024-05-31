@@ -1,0 +1,14 @@
+type Query {
+  products(minPrice: Float, maxPrice: Float, pageSize: Int, categoryId: Int): ProductPage @resolver(class: "Sigma\\Pagination\\Model\\Resolver\\Pagination")
+}
+
+type ProductPage {
+  items: [Product!]
+  totalItems: Int
+}
+
+type Product {
+  name: String
+  sku: String
+  price: Float
+}
