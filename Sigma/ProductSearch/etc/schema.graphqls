@@ -1,0 +1,35 @@
+type Query {
+  searchProducts(
+    query: String
+    filters: ProductFilters
+    sort: ProductSort
+  ): [Product] @resolver(class: "Sigma\\ProductSearch\\Model\\Resolver\\ProductSearch")
+}
+
+input ProductFilters {
+  price: PriceRangeInput
+  brand: String
+}
+
+type Product {
+  sku: ID!
+  name: String!
+  price: Float!
+  brand: String
+  popularity: Int
+}
+
+input PriceRangeInput {
+  min: Float
+  max: Float
+}
+
+input ProductSort {
+  field: String
+  direction: SortDirectionEnum!
+}
+
+enum SortDirectionEnum {
+  ASC
+  DESC
+}
