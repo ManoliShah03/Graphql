@@ -1,0 +1,41 @@
+type Mutation {
+  addProductToCart(input: AddProductToCartInput!): AddProductToCartOutput @resolver(class: "Sigma\\UpdateCart\\Model\\Resolver\\AddToCart") @doc(description: "Add product to cart")
+}
+
+input AddProductToCartInput {
+  cart_id: String!
+  sku: String!
+  quantity: Float!
+}
+
+type AddProductToCartOutput {
+  cart: ShoppingCart @doc(description: "Updated cart information")
+}
+
+type ShoppingCart {
+  items: [CartItem!]! @doc(description: "List of items in the cart")
+}
+
+type CartItem {
+  id: ID!
+  product: Product!
+  quantity: Float!
+}
+
+type Product {
+  name: String!
+  sku: String!
+}
+
+type Mutation {
+  removeFromCart(input: RemoveFromCartInput!): RemoveFromCartOutput @resolver(class: "Sigma\\UpdateCart\\Model\\Resolver\\RemoveFromCart") @doc(description: "Remove product from cart")
+}
+
+input RemoveFromCartInput {
+  cart_id: String!
+  item_id: Int!
+}
+
+type RemoveFromCartOutput {
+  success: Boolean!
+}
