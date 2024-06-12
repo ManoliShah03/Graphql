@@ -1,0 +1,9 @@
+type Query {
+  storeLocator(latitude: Float!, longitude: Float!, radius: Int!): [Store] @resolver(class: "Sigma\\PhysicalStore\\Model\\Resolver\\StoreLocatorResolver") @doc(description : "Get store locations")
+}
+
+ type Store {
+  storeName: String
+  address: String
+  distance: Float
+}
