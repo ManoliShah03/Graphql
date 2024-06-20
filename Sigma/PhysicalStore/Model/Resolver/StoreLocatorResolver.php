@@ -1,7 +1,4 @@
 <?php
-/**
- * Resolver for retrieving store locations based on latitude, longitude, and radius.
- */
 
 namespace Sigma\PhysicalStore\Model\Resolver;
 
@@ -62,17 +59,23 @@ class StoreLocatorResolver implements ResolverInterface
         array $value = null,
         array $args = null
     ) {
-        $latitude = (float) $args['latitude'];
-        $longitude = (float) $args['longitude'];
-        $radius = (int) $args['radius'];
+        $latitude = (float)$args['latitude'];
+        $longitude = (float)$args['longitude'];
+        $radius = (int)$args['radius'];
 
         $stores = $this->getStoreLocatorData($latitude, $longitude, $radius);
 
         if (empty($stores)) {
-            return [];
+            return [
+                'message' => 'No stores found within the specified radius.',
+                'stores' => []
+            ];
         }
 
-        return $stores;
+        return [
+            'message' => 'Stores found within the specified radius.',
+            'stores' => $stores
+        ];
     }
 
     /**
@@ -91,12 +94,12 @@ class StoreLocatorResolver implements ResolverInterface
             $categoryId = $store->getCategoryId();
             $category = $this->categoryFactory->create()->load($categoryId);
 
-            if ($category && $category->isActive()) {
+            if ($category && $category->isActive() && $this->isStoreActive($store)) {
                 $distance = $this->calculateDistance(
                     $latitude,
                     $longitude,
-                    (float) $store->getLat(),
-                    (float) $store->getLng()
+                    (float)$store->getLat(),
+                    (float)$store->getLng()
                 );
 
                 if ($distance <= $radius) {
@@ -110,6 +113,18 @@ class StoreLocatorResolver implements ResolverInterface
         }
 
         return $stores;
+    }
+
+    /**
+     * Check if the store is active.
+     *
+     * @param \Ideo\StoreLocator\Model\Store $store
+     * @return bool
+     */
+    private function isStoreActive($store)
+    {
+        // Assuming the store model has an isActive method or property
+        return $store->isActive();
     }
 
     /**
