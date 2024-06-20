@@ -1,17 +1,12 @@
-type Query {
-    customerOrders: CustomerOrdersOutput @resolver(class: "Sigma\\OrderHistory\\Model\\Resolver\\Orders")
+extend type Query {
+     customerOrders: CustomerOrders @resolver(class: "Sigma\\OrderHistory\\Model\\Resolver\\Orders")
 }
 
-type CustomerOrdersOutput {
-    items: [Order]
+extend type CustomerOrders {
+    items: [CustomerOrder]
 }
 
-type Order {
-    order_number: String
-    id: ID
-    created_at: String
-    grand_total: Float
-    status: String
+extend type CustomerOrder {
     order_items: [OrderItem]
 }
 
