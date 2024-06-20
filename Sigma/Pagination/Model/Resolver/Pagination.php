@@ -6,12 +6,15 @@ use Magento\Framework\GraphQl\Query\ResolverInterface;
 use Magento\Framework\GraphQl\Config\Element\Field;
 use Magento\Framework\GraphQl\Schema\Type\ResolveInfo;
 use Magento\Catalog\Model\ResourceModel\Product\CollectionFactory;
-use Magento\Catalog\Model\CategoryRepository;
+use Magento\Catalog\Api\CategoryRepositoryInterface;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Framework\GraphQl\Exception\GraphQlInputException;
+use Magento\Catalog\Model\Product\Visibility;
+use Magento\Catalog\Model\ProductFactory;
+use Magento\Framework\Pricing\PriceCurrencyInterface;
 
 /**
- * Resolver for product pagination GraphQL query.
+ * Resolver for product pagination.
  */
 class Pagination implements ResolverInterface
 {
@@ -21,34 +24,51 @@ class Pagination implements ResolverInterface
     protected $productCollectionFactory;
 
     /**
-     * @var CategoryRepository
+     * @var CategoryRepositoryInterface
      */
     protected $categoryRepository;
 
     /**
-     * Constructor.
+     * @var ProductFactory
+     */
+    protected $productFactory;
+
+    /**
+     * @var PriceCurrencyInterface
+     */
+    protected $priceCurrency;
+
+    /**
+     * Pagination constructor.
      *
-     * @param CollectionFactory $productCollectionFactory
-     * @param CategoryRepository $categoryRepository
+     * @param CollectionFactory           $productCollectionFactory  Product collection factory
+     * @param CategoryRepositoryInterface $categoryRepository       Category repository interface
+     * @param ProductFactory              $productFactory           Product factory
+     * @param PriceCurrencyInterface      $priceCurrency            Price currency interface
      */
     public function __construct(
         CollectionFactory $productCollectionFactory,
-        CategoryRepository $categoryRepository
+        CategoryRepositoryInterface $categoryRepository,
+        ProductFactory $productFactory,
+        PriceCurrencyInterface $priceCurrency
     ) {
         $this->productCollectionFactory = $productCollectionFactory;
         $this->categoryRepository = $categoryRepository;
+        $this->productFactory = $productFactory;
+        $this->priceCurrency = $priceCurrency;
     }
 
     /**
-     * Resolve GraphQL query.
+     * Resolve function for product pagination.
      *
-     * @param Field $field
-     * @param mixed $context
-     * @param ResolveInfo $info
-     * @param array|null $value
-     * @param array|null $args
-     * @return array
-     * @throws GraphQlInputException
+     * @param Field         $field    GraphQL field details
+     * @param mixed         $context  Execution context
+     * @param ResolveInfo   $info     GraphQL resolve information
+     * @param array|null    $value    Current resolved value (if any)
+     * @param array|null    $args     Resolve arguments
+     *
+     * @return array        Pagination result
+     * @throws GraphQlInputException If category ID is invalid
      */
     public function resolve(Field $field, $context, ResolveInfo $info, array $value = null, array $args = null)
     {
@@ -58,42 +78,56 @@ class Pagination implements ResolverInterface
         $categoryId = isset($args['categoryId']) ? $args['categoryId'] : null;
 
         try {
-            if ($categoryId !== null) {
-                // Load category by ID
-                $category = $this->categoryRepository->get($categoryId);
-                // Add category filter to product collection
-                $collection = $this->productCollectionFactory->create();
-                $collection->addAttributeToSelect(['name', 'sku', 'price'])
-                    ->addFieldToFilter('price', ['from' => $minPrice])
-                    ->addFieldToFilter('price', ['to' => $maxPrice])
-                    ->addCategoriesFilter(['in' => $category->getAllChildren(true)])
-                    ->setPageSize($pageSize);
+            $collection = $this->productCollectionFactory->create();
+            $collection->addAttributeToSelect(['name', 'sku'])
+                ->setVisibility([Visibility::VISIBILITY_BOTH, Visibility::VISIBILITY_IN_CATALOG])
+                ->addTaxPercents()
+                ->addUrlRewrite();
 
-            } else {
-                // If no category ID provided, retrieve all products without category filter
-                $collection = $this->productCollectionFactory->create();
-                $collection->addAttributeToSelect(['name', 'sku', 'price'])
-                    ->addFieldToFilter('price', ['from' => $minPrice])
-                    ->addFieldToFilter('price', ['to' => $maxPrice])
-                    ->setPageSize($pageSize);
+            if ($categoryId !== null) {
+                $category = $this->categoryRepository->get($categoryId);
+                $collection->addCategoriesFilter(['in' => $category->getAllChildren(true)]);
             }
 
-            $products = [];
+            $filteredProductIds = [];
             foreach ($collection as $product) {
+                $product = $this->productFactory->create()->setStoreId($context->getExtensionAttributes()->
+                getStore()->getId())->load($product->getId());
+                $finalPrice = $this->priceCurrency->convertAndRound($product->getFinalPrice());
+
+                if ($finalPrice >= $minPrice && $finalPrice <= $maxPrice) {
+                    $filteredProductIds[] = $product->getId();
+                }
+            }
+
+            $filteredCollection = $this->productCollectionFactory->create();
+            $filteredCollection->addAttributeToSelect(['name', 'sku'])
+                ->setVisibility([Visibility::VISIBILITY_BOTH, Visibility::VISIBILITY_IN_CATALOG])
+                ->addTaxPercents()
+                ->addUrlRewrite()
+                ->addIdFilter($filteredProductIds);
+
+            $filteredCollection->setPageSize($pageSize);
+
+            $products = [];
+            foreach ($filteredCollection as $product) {
+                $product = $this->productFactory->create()->setStoreId($context->getExtensionAttributes()->
+                getStore()->getId())->load($product->getId());
+                $finalPrice = $this->priceCurrency->convertAndRound($product->getFinalPrice());
+
                 $products[] = [
                     'name' => $product->getName(),
                     'sku' => $product->getSku(),
-                    'price' => $product->getPrice()
+                    'price' => floatval($finalPrice)
                 ];
             }
 
             return [
                 'items' => $products,
-                'totalItems' => $collection->getSize()
+                'totalItems' => count($filteredProductIds)
             ];
 
         } catch (NoSuchEntityException $e) {
-            // Handle case where category with given ID does not exist
             throw new GraphQlInputException(__('Invalid category ID provided.'));
         }
     }
