@@ -111,15 +111,49 @@ class OrderPlaceOverride extends PlaceOrder
 
     private function run(Field $field, ContextInterface $context, ResolveInfo $info, array $args)
     {
-            $maskedCartId = $args['input']['cart_id'];
-            $userId = (int)$context->getUserId();
-            $storeId = (int)$context->getExtensionAttributes()->getStore()->getId();
+        $maskedCartId = $args['input']['cart_id'];
+        $userId = (int) $context->getUserId();
+        $storeId = (int) $context->getExtensionAttributes()->getStore()->getId();
 
         try {
+            // Logging setup
+            $writer = new \Zend_Log_Writer_Stream(BP . '/var/log/custom.log');
+            $logger = new \Zend_Log();
+            $logger->addWriter($writer);
+
             $cart = $this->getCartForCheckout->execute($maskedCartId, $userId, $storeId);
 
+            // Get minimum allowed quantity from configuration
+            $minvalue = (int) $this->scopeConfig->getValue(
+                self::XML_PATH_MAX_ALLOWED_QUANTITY,
+                \Magento\Store\Model\ScopeInterface::SCOPE_STORE
+            );
+
+            // Get total items quantity in cart
+            $cartitems = (int) $cart->getItemsQty();
+
+            // Log the cart items quantity for debugging
+            $logger->info("Cart items quantity: " . $cartitems);
+
+            // Validate against minimum allowed quantity
+            if ($cartitems < $minvalue) {
+                throw new GraphQlInputException(__(
+                    "Quantity should be greater than {$minvalue}. The order was not placed. Please try again later."
+                ));
+            }
+
+            // If validation passes, proceed with order placement
             $orderId = $this->placeOrder->execute($cart, $maskedCartId, $userId);
             $order = $this->orderRepository->get($orderId);
+
+            // Return successful response
+            return [
+                'order' => [
+                    'order_number' => $order->getIncrementId(),
+                    // @deprecated The order_id field is deprecated, use order_number instead
+                    'order_id' => $order->getIncrementId(),
+                ],
+            ];
         } catch (LocalizedException $e) {
             throw $this->errorMessageFormatter->getFormatted(
                 $e,
@@ -131,26 +165,5 @@ class OrderPlaceOverride extends PlaceOrder
                 $info
             );
         }
-
-        $minvalue = $this->scopeConfig->getValue(
-            self::XML_PATH_MAX_ALLOWED_QUANTITY,
-            \Magento\Store\Model\ScopeInterface::SCOPE_STORE
-        );
-
-        $cartitems = $cart->getItemsQty();
-
-        if ($cartitems < $minvalue) {
-            throw new GraphQlInputException(__(
-                "Quantity should be greater than 10. The order was not placed. Please try again later."
-            ));
-        }
-
-            return [
-                'order' => [
-                    'order_number' => $order->getIncrementId(),
-                    // @deprecated The order_id field is deprecated, use order_number instead
-                    'order_id' => $order->getIncrementId(),
-                ],
-            ];
     }
 }
