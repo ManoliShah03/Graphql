@@ -1,0 +1,14 @@
+type OrderTracking {
+  status: String
+  shipments: [Shipment!] @doc(description: "List of shipments associated with the order.")
+}
+
+type Shipment {
+  id: String! @doc(description: "Unique identifier for the shipment.")
+  carrier: String @doc(description: "Carrier name associated with the shipment.")
+  trackingNumber: String @doc(description: "Tracking number associated with the shipment.")
+}
+
+type Query {
+  orderTracking(orderId: String!): OrderTracking @resolver(class: "Sigma\\OrderTracking\\Model\\Resolver\\OrderTracking") @doc(description: "Retrieve tracking information for a specific order.")
+}
