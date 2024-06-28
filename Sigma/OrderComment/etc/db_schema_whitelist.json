@@ -1,0 +1,12 @@
+{
+    "quote": {
+        "column": {
+            "sigma_order_comments": true
+        }
+    },
+    "sales_order": {
+        "column": {
+            "sigma_order_comments": true
+        }
+    }
+}

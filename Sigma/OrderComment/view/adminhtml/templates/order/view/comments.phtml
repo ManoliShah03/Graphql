@@ -1,0 +1,19 @@
+<?php if (!empty($block->getOrder()->getSigmaOrderComments())) {
+    ?>
+    <section class="admin__page-section">
+        <div class="admin__page-section-title">
+        <span class="title"><?= /* @noEscape */ __('Order Comments') ?></span>
+        </div>
+        <div class="admin__page-section-content">
+            <div class="admin__page-section-item">
+                <div class="admin__page-section-item-content">
+                    <div class="order-payment-method-title sigma-order-comments-box" id="order-comments-label-div">
+                    <span><?= $escaper->escapeHtml(nl2br($block->getOrder()->getSigmaOrderComments())); ?></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <?php
+}
+?>
